@@ -1,0 +1,26 @@
+Package: Rgenometracks
+Title: ggplot2-Powered Genome Track Visualization
+Version: 0.0.0.9000
+Authors@R: 
+    person("Gustav", "Blomquist", , "gublo22@student.sdu.dk", role = c("aut", "cre"))
+Description: What the package does (one paragraph).
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Imports: 
+    AnnotationDbi,
+    Biostrings,
+    dplyr,
+    GenomeInfoDb,
+    GenomicFeatures,
+    GenomicRanges,
+    ggplot2,
+    ggseqlogo,
+    IRanges,
+    magrittr,
+    rtracklayer,
+    S4Vectors,
+    stringr,
+    tibble,
+    tidyr

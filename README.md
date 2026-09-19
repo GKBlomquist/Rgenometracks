@@ -1,0 +1,103 @@
+---
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+# Rgenometracks
+
+<!-- badges: start -->
+
+<!-- badges: end -->
+
+Rgenometrack provides a simple interface for plotting genome tracks
+using ggplot.
+
+## Installation
+
+You can install the development version of Rgenometracks like so:
+
+``` r
+# Install BiocManager if not already installed
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+
+# Install the package directly from GitHub
+BiocManager::install("GKBlomquist/Rgenometracks")
+```
+
+## Example
+
+### Single-sample BigWig plot
+
+Plotting a single bigwig track with genes. I recommend using `patchwork`
+to combine multiple tracks into a single plot. This allows for more
+advanced options like combining axes and setting individual heights for
+each track plot.
+
+``` r
+library(Rgenometracks)
+library(ggplot2)
+library(patchwork)
+library(org.Hs.eg.db)
+library(TxDb.Hsapiens.UCSC.hg38.knownGene)
+
+# set unified theme
+set_theme_modern()
+
+# set region and reference genome
+bw_file = "path/to/bigwig.bw"
+region <- "chr2:11446438-11699848"
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+orgdb <- org.Hs.eg.db
+
+# plot BigWig track
+bigwig_track(file = bw_file, region) +
+
+# plot genes in region
+genes_track(region, 
+            txdb = txdb, orgdb = orgdb, 
+            collapse = TRUE, fully_in_view = TRUE) +
+  
+plot_layout(ncol = 1, axes = "collect_x", heights = c(1, 0.5))
+```
+
+<img src="man/figures/README-example-1.png" width="100%"/>
+
+### Multi-sample BigWig plot
+
+Currently, automatic multi-sample handling is not supported. However,
+one can manually plot and compare multiple samples by freezing the
+y-axis and coloring the samples.
+
+``` r
+# plot BigWig track
+sample1_path = "path/to/sample1.bw"
+sample2_path = "path/to/sample2.bw"
+
+bigwig_track(file = sample1_path, region, y_max = 1000, color = "red") + 
+  labs(tag = "Sample1") + 
+  theme(plot.tag = element_text(angle = 270, vjust = 2), plot.tag.position = "right") +
+  
+bigwig_track(file = sample2_path, region, y_max = 1000, colo = "blue") + 
+  labs(tag = "Sample2") +
+  theme(plot.tag = element_text(angle = 270, vjust = 2), plot.tag.position = "right") +
+
+# plot genes in region
+genes_track(region, 
+            txdb = txdb, orgdb = orgdb, 
+            collapse = TRUE, fully_in_view = TRUE) +
+  
+plot_layout(ncol = 1, axes = "collect_x", heights = c(1, 1, 0.5)) 
+```
+
+<img src="man/figures/README-unnamed-chunk-2-1.png" width="100%"/>
+
+### Additional features
+
+Rgenometracks offers additional features like plotting arcs with
+`arcs_track` and plotting deep learning model contribution scores using
+`bigwig_logo_track`.
