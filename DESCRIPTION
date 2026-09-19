@@ -24,3 +24,5 @@ Imports:
     stringr,
     tibble,
     tidyr
+URL: https://github.com/GKBlomquist/Rgenometracks
+BugReports: https://github.com/GKBlomquist/Rgenometracks/issues
