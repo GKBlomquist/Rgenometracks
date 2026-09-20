@@ -78,6 +78,25 @@ get_bw_plot <- function(bw_df, start, end, x_axis = FALSE, color = "black", ylab
 }
 
 
+get_multi_bw_plot <- function(bw_df, start, end, x_axis = FALSE, colors = NULL, ylabel = "Read Count", xlabel = NULL, y_max = NULL, split_tracks = TRUE, legend = TRUE) {
+  if (is.null(y_max)) {
+    y_max <- max(bw_df$score)
+  }
+  plot <- ggplot(bw_df, aes(xmin = start, xmax = end + 1, ymin = 0, ymax = score, color = sample, fill = sample))+
+    geom_rect(show.legend = legend)+
+    scale_y_continuous(expand = c(0,0), name = ylabel, limits = c(0, y_max))+
+    scale_x_continuous(expand = c(0,0), limits = c(start, end))
+
+  if (!x_axis) plot = plot + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.line.x = element_blank())
+
+  if (split_tracks) plot = plot + facet_grid(sample~.)
+
+  if (!is.null(colors)) plot = plot + scale_color_discrete(palette = colors) + scale_fill_discrete(palette = colors)
+
+  return (plot)
+}
+
+
 get_contribution_plot <- function(contributions, start, end, ylabel = "Contribution", xlabel = NULL, annotations = NULL, x_axis = TRUE, y_max = NULL) {
   # get breaks
   plot_breaks <- round(seq(0, ncol(contributions), length.out = 4)) + c(1, 0 ,0 ,0)
@@ -132,6 +151,36 @@ bigwig_track <- function(file, region, color = "black", ylabel = "Read Count", x
 
   return (plot)
 }
+
+
+#' @title Plot multiple bigwig tracks in same region.
+#' @description
+#' Plots a region over multiple bigwig tracks, either one-per-track or all stacked in one track.
+#' @param file, named list: A named list of bigwig files, where each entry in the list is the path to the file, and the name being the sample name (e.g., list('sample1' = 'path/to/sample1.bw', 'sample2' = 'path/to/sample2.bw').
+#' @param region, character: string specifying region to plot (accepts chr:start-end and chr-start-end formats).
+#' @param colors, NULL | vector | function: Either a character vector of colors to use (must be at least same length as number of samples) or a color function determining how samples are colored. If NULL, will default to ggplot2 default palette.
+#' @param ylabel, character| NULL: y-axis label.
+#' @param xlabel, character | NULL: x-axis label.
+#' @param x_axis, bool: Whether to draw the x_axis.
+#' @param y_max, numeric: Upper limit of the y-axis.
+#' @param split_tracks, bool: Whether to plot each bigwig file in a separate track.
+#' @param legend, bool: Whether to draw color legend.
+#' @returns A ggplot 2 plot.
+#' @import ggplot2
+#' @export
+multi_bigwig_track <- function(paths_list, region, colors = NULL, ylabel = "Read Count", xlabel = NULL, x_axis = TRUE, y_max = NULL, split_tracks = TRUE, legend = TRUE) {
+  region_split <- split_region_string(region)
+  bw_list <- list()
+
+  for (sample in names(paths_list)) {
+    bw_list[[sample]] <- fetch_bw(paths_list[[sample]], region_split[["chr"]], region_split[["start"]], region_split[["end"]])
+  }
+  bw_df <- dplyr::bind_rows(bw_list, .id = "sample")
+
+  plot <- get_multi_bw_plot(bw_df, region_split[["start"]], region_split[["end"]], x_axis = x_axis, colors = colors, ylabel = ylabel, xlabel = xlabel, y_max = y_max, split_tracks = split_tracks, legend = legend)
+  return (plot)
+}
+
 
 
 #' @title Plot attribution score bigwig logo track at specified chromosomal region
