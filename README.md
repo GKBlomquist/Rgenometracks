@@ -40,8 +40,8 @@ set_theme_modern()
 
 # set region and reference genome
 bw_file = "~/Downloads/ESR1.bigWig"
-region <- "chr2:11446438-11699848"
-txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene
+region <- "chr2:11475000-11650000"
+txdb <- TxDb.Hsapiens.UCSC.hg38.knownGene # remember to grab the correct TxDb amd orgdb for your reference genome
 orgdb <- org.Hs.eg.db
 
 # plot BigWig track
@@ -102,6 +102,9 @@ heatmap +
   arcs_track(data.frame("chr2", 11500000, 11540000, 2), region, arc_color = "red") +
   
   plot_layout(ncol = 1, heights = c(1,1,0.5), axes = "collect_x")
+#> Warning in qt((1 - level)/2, df): NaNs produced
+#> Warning in max(ids, na.rm = TRUE): no non-missing arguments to max; returning
+#> -Inf
 ```
 
 <img src="man/figures/README-unnamed-chunk-3-1.png" width="100%"/>
