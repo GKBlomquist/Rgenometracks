@@ -108,3 +108,11 @@ heatmap +
 ```
 
 <img src="man/figures/README-unnamed-chunk-3-1.png" width="100%"/>
+
+## Full list of available tracks:
+
+1.  BigWig track (e.g., ChIP-seq or ATAC-seq signals): `bigwig_track`, `multi_bigwig_track`
+2.  logo track (e.g., deeplearning model contribution scores): `bigwig_logo_track`
+3.  Arcs track (e.g. ABC connections): `arcs_track`
+4.  BED track (e.g., binding sites): `bed_track`
+5.  genes track: `genes_track`

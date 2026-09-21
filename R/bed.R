@@ -86,8 +86,3 @@ bed_track <- function(bed_paths, region, x_axis = TRUE, color = NULL, xlabel = N
   plot <- get_bed_plot(bed_df, region_split[["start"]], region_split[["end"]], x_axis = x_axis, color = color, xlabel = xlabel, legend = legend, linewidth = linewidth, ylabel = ylabel, y_axis = y_axis)
   return (plot)
 }
-
-test <- list(
-  "ESR1" = "~/Desktop/Uni filer/speciale/thesis_notes/projects/integration_new/data/regions/motif_sites/MA0112_3_MA0112_3_ESR1_sites.bed",
-  "AP1" = "~/Desktop/Uni filer/speciale/thesis_notes/projects/integration_new/data/regions/motif_sites/MA0099_3_MA0099_3_FOS__JUN_sites.bed"
-  )
