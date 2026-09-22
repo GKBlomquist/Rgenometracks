@@ -2,6 +2,7 @@
 
 export("%>%")
 export(arcs_track)
+export(bed_track)
 export(bigwig_logo_track)
 export(bigwig_track)
 export(genes_track)
