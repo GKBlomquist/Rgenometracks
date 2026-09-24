@@ -12,7 +12,8 @@ set_theme_modern <- function() {
         axis.text = element_text(size = 12, color = "black"), axis.title = element_text(size = 12),
         legend.text = element_text(size = 12, color = "black"), legend.title = element_text(size = 12),
         axis.line = element_line(linewidth = 0.4), panel.border = element_rect(linewidth = 0.4, color = "black"),
-        strip.background = element_blank(), strip.text = element_text(size = 12, color = "black")
+        strip.background = element_blank(), strip.text = element_text(size = 12, color = "black"),
+        plot.title = element_text(size = 15, hjust = 0.5, face = "bold")
       )
   )
 }
