@@ -21,7 +21,8 @@ fetch_bed <- function(bed_path, chr, start, end) {
 get_bed_plot <- function(beds_df, start, end, x_axis = TRUE, color = NULL, xlabel = NULL, legend = TRUE, linewidth = 2, ylabel = NULL, y_axis = TUE) {
   # base plot
   plot <- ggplot(beds_df, aes(x = start, xend = end, y = sample, yend = sample)) +
-    scale_x_continuous(expand = c(0,0), limits = c(start, end), name = xlabel) +
+    scale_x_continuous(expand = c(0,0), name = xlabel) +
+    coord_cartesian(xlim = c(start, end)) +
     scale_y_discrete(name = ylabel)
 
   # color options
