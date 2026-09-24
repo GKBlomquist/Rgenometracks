@@ -72,12 +72,14 @@ bed_track <- function(bed_paths, region, x_axis = TRUE, color = NULL, xlabel = N
   region_split <- split_region_string(region)
 
   if (is.character(bed_paths)) {
+    message("Treating input as single bed path")
     bed_df <- fetch_bed(bed_paths, region_split[["chr"]], region_split[["start"]], region_split[["end"]])
     bed_df$sample = ""
   } else {
 
     bed_list <- list()
     for (sample in names(bed_paths)) {
+      message("Treating input as multiple bed paths")
       bed_list[[sample]] <- fetch_bed(bed_paths[[sample]], region_split[["chr"]], region_split[["start"]], region_split[["end"]])
     }
 
