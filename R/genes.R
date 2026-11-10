@@ -20,16 +20,19 @@ fetch_genes <- function(chr, chrom_start, chrom_end, txdb, orgdb, collapse = FAL
     return(list(exons = data.frame(), introns = data.frame(), labels = data.frame()))
   }
 
-  # Annotate transcripts with Gene Symbols
+  # Ensure TXID is strictly character everywhere
   tx_ids <- as.character(tx_df$tx_id)
 
   suppressMessages({
     tx_to_gene <- AnnotationDbi::select(txdb, keys = tx_ids, keytype = "TXID", columns = "GENEID")
+    tx_to_gene$TXID <- as.character(tx_to_gene$TXID)
     tx_to_gene <- tx_to_gene[!duplicated(tx_to_gene$TXID) & !is.na(tx_to_gene$GENEID), ]
 
     if (nrow(tx_to_gene) > 0) {
-      gene_names <- AnnotationDbi::select(orgdb, keys = unique(tx_to_gene$GENEID), keytype = "ENTREZID", columns = "SYMBOL")
+      gene_names <- AnnotationDbi::select(orgdb, keys = as.character(unique(tx_to_gene$GENEID)), keytype = "ENTREZID", columns = "SYMBOL")
+      gene_names$ENTREZID <- as.character(gene_names$ENTREZID)
       gene_names <- gene_names[!duplicated(gene_names$ENTREZID), ]
+      tx_to_gene$GENEID <- as.character(tx_to_gene$GENEID)
       tx_map <- dplyr::left_join(tx_to_gene, gene_names, by = c("GENEID" = "ENTREZID"))
     } else {
       tx_map <- data.frame(TXID = character(), SYMBOL = character())
@@ -39,32 +42,29 @@ fetch_genes <- function(chr, chrom_start, chrom_end, txdb, orgdb, collapse = FAL
   tx_df$TXID <- as.character(tx_df$tx_id)
   tx_df <- dplyr::left_join(tx_df, tx_map, by = "TXID")
 
-  # Remove any transcripts that dont have a known gene symbol
+  # Remove any transcripts that don't have a known gene symbol
   tx_df <- tx_df[!is.na(tx_df$SYMBOL), ]
 
-  # return empty data if no annotated transcripts were found
   if (nrow(tx_df) == 0) {
     return(list(exons = data.frame(), introns = data.frame(), labels = data.frame()))
   }
 
-  # Fetch exons and introns
-  exons_list <- GenomicFeatures::exonsBy(txdb, by = "tx")[tx_ids]
-  introns_list <- GenomicFeatures::intronsByTranscript(txdb)[tx_ids]
+  # Use only the filtered transcript IDs
+  tx_ids_annotated <- unique(tx_df$TXID)
+  exons_list <- GenomicFeatures::exonsBy(txdb, by = "tx")[tx_ids_annotated]
+  introns_list <- GenomicFeatures::intronsByTranscript(txdb)[tx_ids_annotated]
 
-  # Handle grouping based on collapse argument
   if (collapse) {
-    # Attach symbols to the GRanges object before reducing
     exons_gr <- unlist(exons_list)
-    tx_to_sym <- stats::setNames(tx_df$SYMBOL, tx_df$TXID)
+    tx_to_sym <- stats::setNames(as.character(tx_df$SYMBOL), as.character(tx_df$TXID))
     exons_gr$SYMBOL <- tx_to_sym[names(exons_gr)]
 
-    # Split by symbol and merge overlapping exons
     exons_split <- S4Vectors::split(exons_gr, exons_gr$SYMBOL)
     exons_reduced <- GenomicRanges::reduce(exons_split)
 
     exons_df <- as.data.frame(exons_reduced) %>% dplyr::rename(SYMBOL = group_name)
+    exons_df$SYMBOL <- as.character(exons_df$SYMBOL)
 
-    # calculate introns as the gaps between merged exons using dplyr
     introns_df <- exons_df %>%
       dplyr::group_by(SYMBOL) %>%
       dplyr::arrange(start, .by_group = TRUE) %>%
@@ -81,35 +81,48 @@ fetch_genes <- function(chr, chrom_start, chrom_end, txdb, orgdb, collapse = FAL
       dplyr::select(-intron_start, -intron_end) %>%
       dplyr::ungroup()
 
-    # Calculate bounds for y-level displacement
     bounds_df <- tx_df %>%
       dplyr::group_by(SYMBOL) %>%
       dplyr::summarise(tx_start = min(start), tx_end = max(end)) %>%
       dplyr::arrange(tx_start)
 
+    bounds_df$SYMBOL <- as.character(bounds_df$SYMBOL)
+
     tx_iranges <- IRanges::IRanges(start = bounds_df$tx_start, end = bounds_df$tx_end)
     bounds_df$y_level <- IRanges::disjointBins(tx_iranges)
 
     exons_df <- dplyr::left_join(exons_df, bounds_df[, c("SYMBOL", "y_level")], by = "SYMBOL")
-    if(nrow(introns_df) > 0) introns_df <- dplyr::left_join(introns_df, bounds_df[, c("SYMBOL", "y_level")], by = "SYMBOL")
+    if (nrow(introns_df) > 0) {
+      introns_df <- dplyr::left_join(introns_df, bounds_df[, c("SYMBOL", "y_level")], by = "SYMBOL")
+    }
 
     labels_df <- bounds_df %>% dplyr::rename(label_name = SYMBOL)
 
   } else {
-    exons_df <- as.data.frame(exons_list) %>% dplyr::rename(tx_id = group_name)
-    introns_df <- as.data.frame(introns_list)
-    if(nrow(introns_df) > 0) introns_df <- introns_df %>% dplyr::rename(tx_id = group_name)
+    exons_df <- as.data.frame(exons_list) %>%
+      dplyr::rename(tx_id = group_name) %>%
+      dplyr::mutate(tx_id = as.character(tx_id))
 
-    # Calculate bounds for y-level displacement
+    introns_df <- as.data.frame(introns_list)
+    if (nrow(introns_df) > 0) {
+      introns_df <- introns_df %>%
+        dplyr::rename(tx_id = group_name) %>%
+        dplyr::mutate(tx_id = as.character(tx_id))
+    }
+
     bounds_df <- tx_df %>%
       dplyr::rename(tx_start = start, tx_end = end) %>%
       dplyr::arrange(tx_start)
+
+    bounds_df$TXID <- as.character(bounds_df$TXID)
 
     tx_iranges <- IRanges::IRanges(start = bounds_df$tx_start, end = bounds_df$tx_end)
     bounds_df$y_level <- IRanges::disjointBins(tx_iranges)
 
     exons_df <- dplyr::left_join(exons_df, bounds_df[, c("TXID", "y_level")], by = c("tx_id" = "TXID"))
-    if(nrow(introns_df) > 0) introns_df <- dplyr::left_join(introns_df, bounds_df[, c("TXID", "y_level")], by = c("tx_id" = "TXID"))
+    if (nrow(introns_df) > 0) {
+      introns_df <- dplyr::left_join(introns_df, bounds_df[, c("TXID", "y_level")], by = c("tx_id" = "TXID"))
+    }
 
     labels_df <- bounds_df %>% dplyr::rename(label_name = SYMBOL)
   }

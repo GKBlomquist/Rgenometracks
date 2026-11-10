@@ -17,6 +17,11 @@ fetch_arcs <- function(arcs_path, chr, start, end) {
   colnames(arcs) <- c("chrom", "start_pos", "end_pos", "score")
 
   arcs_filtered <- arcs %>%
+    dplyr::mutate(
+      real_start = pmin(start_pos, end_pos),
+      real_end   = pmax(start_pos, end_pos)
+    ) %>%
+    dplyr::select(chrom, start_pos = real_start, end_pos = real_end, score) %>%
     dplyr::filter(chrom == chr & start_pos <= end & end_pos >= start) %>%
     dplyr::rowwise() %>%
     dplyr::mutate(midpoint = mean(c(start_pos, end_pos))) %>%
@@ -29,8 +34,12 @@ fetch_arcs <- function(arcs_path, chr, start, end) {
 
 
 # ---- Plotting ----
-get_arcs_plot <- function(arcs, start, end, inverted = TRUE, x_axis = FALSE, arc_color = "score", color_function = grDevices::colorRampPalette(c("black", "red")), line_width = 0.5) {
-  height = ifelse(inverted, -1, 1)
+get_arcs_plot <- function(arcs, start, end, inverted = TRUE, x_axis = FALSE,
+                          arc_color = "score",
+                          color_function = grDevices::colorRampPalette(c("black", "red")),
+                          line_width = 0.5) {
+
+  height <- ifelse(inverted, -1, 1)
 
   arcs <- arcs %>%
     dplyr::mutate(y = dplyr::case_when(
@@ -39,32 +48,30 @@ get_arcs_plot <- function(arcs, start, end, inverted = TRUE, x_axis = FALSE, arc
     ))
 
   if (arc_color == "score") {
-    plot <- ggplot(arcs, aes(x = position, y = y, group = group, color = score))+
-      geom_smooth(method = "lm", formula = y ~ poly(x, 2), linewidth = line_width)+
-      scale_x_continuous(limits = c(start, end), expand = c(0,0))+
-      scale_y_continuous(expand = c(0,0))+
-      scale_color_continuous(palette = color_function)+
-      labs(x = NULL, y = NULL, color = NULL)+
-      theme(
-        axis.text.y = element_blank(), axis.ticks.y = element_blank(),
-        legend.key.height = unit(1, "null"), legend.key.width = unit(0.1, "cm"), legend.frame = element_rect(color = "black")
-      )
+    plot <- ggplot(arcs, aes(x = position, y = y, group = group, color = score)) +
+      ggforce::geom_bezier(linewidth = line_width) +
+      scale_color_gradientn(colours = color_function(100))
   } else {
-    plot <- ggplot(arcs, aes(x = position, y = y, group = group))+
-      geom_smooth(method = "lm", formula = y ~ poly(x, 2), color = arc_color, linewidth = line_width)+
-      scale_x_continuous(limits = c(start, end), expand = c(0,0))+
-      scale_y_continuous(expand = c(0,0))+
-      labs(x = NULL, y = NULL, color = NULL)+
-      theme(
-        axis.text.y = element_blank(), axis.ticks.y = element_blank(),
-        legend.key.height = unit(1, "null"), legend.key.width = unit(0.1, "cm"), legend.frame = element_rect(color = "black")
-      )
+    plot <- ggplot(arcs, aes(x = position, y = y, group = group)) +
+      ggforce::geom_bezier(color = arc_color, linewidth = line_width)
   }
 
+  plot <- plot +
+    coord_cartesian(xlim = c(start, end), expand = FALSE) +
+    labs(x = NULL, y = NULL, color = NULL) +
+    theme(
+      axis.text.y = element_blank(),
+      axis.ticks.y = element_blank(),
+      legend.key.height = unit(1, "null"),
+      legend.key.width = unit(0.1, "cm"),
+      legend.frame = element_rect(color = "black")
+    )
 
-  if (!x_axis) plot <- plot + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.line.x = element_blank())
+  if (!x_axis) {
+    plot <- plot + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.line.x = element_blank())
+  }
 
-  return (plot)
+  return(plot)
 }
 
 
@@ -81,6 +88,7 @@ get_arcs_plot <- function(arcs, start, end, inverted = TRUE, x_axis = FALSE, arc
 #' @param line_width, numeric: width of the arc lines.
 #' @returns A ggplot2 plot.
 #' @import ggplot2
+#' @importFrom ggforce geom_bezier
 #' @export
 arcs_track <- function(arcs, region, inverted = TRUE, x_axis = TRUE, arc_color = "score", color_function = grDevices::colorRampPalette(c("black", "red")), line_width = 0.5) {
   region_split <- split_region_string(region)
